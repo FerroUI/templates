@@ -174,6 +174,7 @@ jobs:
           curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
             "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-x86_64-unknown-linux-gnu.tar.gz"
           echo "$CARGO_GENERATE_SHA256  $RUNNER_TEMP/cargo-generate.tar.gz" | sha256sum -c -
+          mkdir -p "$HOME/.cargo/bin" && echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
           tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
       - name: Generate and set up the submodule
         run: SMOKE_STEPS=" " scripts/smoke.sh cross-platform smoke/my-app --define theme=fluent
@@ -184,10 +185,11 @@ jobs:
           ferroui: smoke/my-app/FerroUI
       - name: Build the site
         working-directory: smoke/my-app
-        run: FERROUI_BROWSER_WORKSPACE="$PWD" FerroUI/scripts/build-browser.sh my-app-browser --out "$RUNNER_TEMP/site"
+        # The site goes below the target directory of the workspace, as build-browser.sh requires.
+        run: FERROUI_BROWSER_WORKSPACE="$PWD" FerroUI/scripts/build-browser.sh my-app-browser --out "$PWD/target/site"
       - name: Smoke run of the site in headless Chrome
         working-directory: smoke/my-app
-        run: node FerroUI/scripts/apps/smoke-site.mjs "$RUNNER_TEMP/site" --screenshot "$RUNNER_TEMP/smoke/site.png"
+        run: node FerroUI/scripts/apps/smoke-site.mjs "$PWD/target/site" --screenshot "$RUNNER_TEMP/smoke/site.png"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -206,20 +208,22 @@ jobs:
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           targets: aarch64-linux-android
+      - name: Install cargo-generate
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
+            "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-x86_64-unknown-linux-gnu.tar.gz"
+          echo "$CARGO_GENERATE_SHA256  $RUNNER_TEMP/cargo-generate.tar.gz" | sha256sum -c -
+          mkdir -p "$HOME/.cargo/bin" && echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
+      - name: Generate and set up the submodule
+        run: SMOKE_STEPS=" " scripts/smoke.sh cross-platform smoke/my-app --define theme=material --define app_id=org.example.myapp
+      # After the generation: the cache is of the generated workspace.
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           key: cross-platform-android
           workspaces: smoke/my-app
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-on-failure: true
-      - name: Install cargo-generate
-        run: |
-          curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
-            "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-x86_64-unknown-linux-gnu.tar.gz"
-          echo "$CARGO_GENERATE_SHA256  $RUNNER_TEMP/cargo-generate.tar.gz" | sha256sum -c -
-          tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
-      - name: Generate and set up the submodule
-        run: SMOKE_STEPS=" " scripts/smoke.sh cross-platform smoke/my-app --define theme=material --define app_id=org.example.myapp
       # As the Android job of FerroUI's app.yml.
       - name: The pinned packages of the Android SDK (FerroUI/scripts/android/env.sh)
         working-directory: smoke/my-app
@@ -247,20 +251,22 @@ jobs:
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
           targets: aarch64-apple-ios-sim
+      - name: Install cargo-generate
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
+            "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-aarch64-apple-darwin.tar.gz"
+          echo "$CARGO_GENERATE_SHA256_MACOS  $RUNNER_TEMP/cargo-generate.tar.gz" | shasum -a 256 -c -
+          mkdir -p "$HOME/.cargo/bin" && echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
+      - name: Generate and set up the submodule
+        run: SMOKE_STEPS=" " scripts/smoke.sh cross-platform smoke/my-app --define theme=macos --define app_id=org.example.myapp
+      # After the generation: the cache is of the generated workspace.
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           key: cross-platform-ios
           workspaces: smoke/my-app
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-on-failure: true
-      - name: Install cargo-generate
-        run: |
-          curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
-            "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-aarch64-apple-darwin.tar.gz"
-          echo "$CARGO_GENERATE_SHA256_MACOS  $RUNNER_TEMP/cargo-generate.tar.gz" | shasum -a 256 -c -
-          tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
-      - name: Generate and set up the submodule
-        run: SMOKE_STEPS=" " scripts/smoke.sh cross-platform smoke/my-app --define theme=macos --define app_id=org.example.myapp
       # As the iOS job of FerroUI's app.yml.
       - name: Bundle
         working-directory: smoke/my-app

@@ -46,6 +46,7 @@ runs:
         curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
           "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-x86_64-unknown-linux-gnu.tar.gz"
         echo "$CARGO_GENERATE_SHA256  $RUNNER_TEMP/cargo-generate.tar.gz" | sha256sum -c -
+        mkdir -p "$HOME/.cargo/bin" && echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
         tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
         cargo generate --version
     - name: FerroUI
