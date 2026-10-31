@@ -1,0 +1,10 @@
+[template]
+description = "A FerroUI control library: a templated control with styled properties and its control theme in XAML"
+# Copied as they are: the build script has no placeholders.
+exclude = ["build.rs"]
+
+[placeholders.control]
+type = "string"
+prompt = "The name of the control (PascalCase)"
+regex = "^[A-Z][A-Za-z0-9]*$"
+default = "InfoCard"

@@ -1,0 +1,21 @@
+[package]
+name = "{{project-name}}-desktop"
+description = "The desktop host of {{project-name}} (Windows, macOS, Linux)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "{{project-name}}-desktop"
+path = "program.rs"
+
+[dependencies]
+{{project-name}} = { path = "../{{project-name | pascal_case}}" }
+ferroui-base = { workspace = true }
+ferroui-controls = { workspace = true }
+ferroui-desktop = { workspace = true }
+{%- if theme == "material" %}
+ferroui-themes-material = { workspace = true }
+{%- endif %}

@@ -1,0 +1,5 @@
+# The FerroUI project templates (README.md):
+#
+#   cargo generate --git https://github.com/FerroUI/templates <template>
+[template]
+sub_templates = ["app", "app-codebehind", "declarative", "rsx", "cross-platform", "control-library", "window", "user-control", "templated-control", "resource-dictionary", "styles"]

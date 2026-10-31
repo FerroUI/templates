@@ -1,0 +1,271 @@
+name: CI
+
+# Every template is generated with cargo-generate and the generated project is built and tested:
+# each single-crate template with every theme (and the app template with both MVVM libraries), the
+# item templates wired into a generated application, and the cross-platform template with all of
+# its hosts, as its own CI builds it (the desktop build, the tests and the browser site; the Android
+# and iOS packages as well). README.md, section "CI", lists what runs where.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ferroui:
+        description: >
+          Where the single-crate templates take FerroUI from: crates.io (the release the templates
+          name), or a branch of FerroUI for a release that is not published yet (main).
+        required: false
+        default: crates.io
+  # Weekly: the templates against the FerroUI release they name, and the cross-platform template
+  # against FerroUI main.
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+  RUST_BACKTRACE: 1
+  # Where the single-crate templates take FerroUI from: `crates.io`, the release the templates name;
+  # anything else is a branch of FerroUI whose crates replace the released ones
+  # (scripts/patch-ferroui.py), for a release that is not published yet
+  # (`gh workflow run ci.yml -f ferroui=main`).
+  FERROUI: ${{ inputs.ferroui || 'crates.io' }}
+  CARGO_GENERATE_VERSION: 0.26.0
+  CARGO_GENERATE_SHA256: 67933b2bc504cbf7a1170b4543eaf081a071de45ebc970ec9bef9558941559bb
+  CARGO_GENERATE_SHA256_MACOS: 1bec95b01ac7a5d43d2a8ece6d5a88e1ccb4066584ac9a59ff613a66364b2fe6
+
+jobs:
+  conventions:
+    name: Conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: The upstream name, thread_local!, emoji, one FerroUI version, the shared files
+        run: python3 scripts/check-conventions.py
+
+  template:
+    name: ${{ matrix.template }}
+    needs: conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # One generated project per line of `projects`: its name and its --define arguments.
+          - template: app
+            projects: |
+              app-winui --define theme=winui --define mvvm=minimal
+              app-fluent-reactiveui --define theme=fluent --define mvvm=reactiveui
+              app-simple --define theme=simple
+              app-macos --define theme=macos
+              app-material --define theme=material --define mvvm=reactiveui
+          - template: app-codebehind
+            projects: |
+              codebehind-winui --define theme=winui
+              codebehind-fluent --define theme=fluent
+              codebehind-simple --define theme=simple
+              codebehind-macos --define theme=macos
+              codebehind-material --define theme=material
+          - template: declarative
+            projects: |
+              declarative-winui --define theme=winui
+              declarative-fluent --define theme=fluent
+              declarative-simple --define theme=simple
+              declarative-macos --define theme=macos
+              declarative-material --define theme=material
+          - template: rsx
+            projects: |
+              rsx-winui --define theme=winui
+              rsx-fluent --define theme=fluent
+              rsx-simple --define theme=simple
+              rsx-macos --define theme=macos
+              rsx-material --define theme=material
+          - template: control-library
+            projects: |
+              controls --define control=InfoCard
+              gauges --define control=RadialGauge
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/setup
+        with:
+          cache-key: ${{ matrix.template }}
+      - name: Generate, build and test
+        env:
+          PROJECTS: ${{ matrix.projects }}
+          TEMPLATE: ${{ matrix.template }}
+        run: |
+          while IFS= read -r line; do
+            [ -n "${line// }" ] || continue
+            read -r name defines <<< "$line"
+            echo "::group::$TEMPLATE: $name ($defines)"
+            # shellcheck disable=SC2086
+            xvfb-run -a scripts/smoke.sh "$TEMPLATE" "smoke/$name" $defines
+            python3 scripts/check-conventions.py "smoke/$name"
+            echo "::endgroup::"
+          done <<< "$PROJECTS"
+
+  items:
+    name: Item templates
+    needs: conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/setup
+        with:
+          cache-key: items
+      - name: Generate an application and add every item to it
+        run: |
+          SMOKE_STEPS=" " scripts/smoke.sh app smoke/with-items --define theme=winui
+          xvfb-run -a scripts/items-smoke.sh smoke/with-items
+          python3 scripts/check-conventions.py smoke/with-items
+
+  cross-platform:
+    name: cross-platform (desktop, tests)
+    needs: conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/setup
+        with:
+          cache-key: cross-platform
+          # The generated project takes FerroUI from its submodule.
+          ferroui: submodule
+      - name: Generate with every host, set up the submodule, check, test and build the desktop host
+        run: |
+          xvfb-run -a scripts/smoke.sh cross-platform smoke/my-app --define theme=winui
+          (cd smoke/my-app && cargo build -p my-app-desktop)
+          python3 smoke/my-app/FerroUI/scripts/apps/sync-workspace.py --check smoke/my-app
+          python3 scripts/check-conventions.py smoke/my-app
+      - name: Generate with some of the hosts
+        run: |
+          cargo generate --path . cross-platform --name desktop-and-android --silent --vcs none \
+            --destination smoke --define theme=material --define browser=false --define ios=false \
+            --define app_id=org.example.desktopandroid
+          test -d smoke/desktop-and-android/DesktopAndAndroid.Android
+          test ! -e smoke/desktop-and-android/DesktopAndAndroid.Browser
+          test ! -e smoke/desktop-and-android/DesktopAndAndroid.iOS
+          grep -q 'application-id org.example.desktopandroid' smoke/desktop-and-android/.github/workflows/ci.yml
+          python3 scripts/check-conventions.py smoke/desktop-and-android
+
+  cross-platform-browser:
+    name: cross-platform (browser site)
+    needs: conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install cargo-generate
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
+            "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-x86_64-unknown-linux-gnu.tar.gz"
+          echo "$CARGO_GENERATE_SHA256  $RUNNER_TEMP/cargo-generate.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
+      - name: Generate and set up the submodule
+        run: SMOKE_STEPS=" " scripts/smoke.sh cross-platform smoke/my-app --define theme=fluent
+      # As the browser job of FerroUI's app.yml: the pinned toolchain of the submodule.
+      - uses: ./smoke/my-app/FerroUI/.github/actions/browser-toolchain
+        with:
+          cache-key: cross-platform-browser
+          ferroui: smoke/my-app/FerroUI
+      - name: Build the site
+        working-directory: smoke/my-app
+        run: FERROUI_BROWSER_WORKSPACE="$PWD" FerroUI/scripts/build-browser.sh my-app-browser --out "$RUNNER_TEMP/site"
+      - name: Smoke run of the site in headless Chrome
+        working-directory: smoke/my-app
+        run: node FerroUI/scripts/apps/smoke-site.mjs "$RUNNER_TEMP/site" --screenshot "$RUNNER_TEMP/smoke/site.png"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: cross-platform-site-screenshot
+          path: ${{ runner.temp }}/smoke
+          if-no-files-found: ignore
+          retention-days: 7
+
+  cross-platform-android:
+    name: cross-platform (Android package)
+    needs: conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          key: cross-platform-android
+          workspaces: smoke/my-app
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-on-failure: true
+      - name: Install cargo-generate
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
+            "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-x86_64-unknown-linux-gnu.tar.gz"
+          echo "$CARGO_GENERATE_SHA256  $RUNNER_TEMP/cargo-generate.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
+      - name: Generate and set up the submodule
+        run: SMOKE_STEPS=" " scripts/smoke.sh cross-platform smoke/my-app --define theme=material --define app_id=org.example.myapp
+      # As the Android job of FerroUI's app.yml.
+      - name: The pinned packages of the Android SDK (FerroUI/scripts/android/env.sh)
+        working-directory: smoke/my-app
+        run: |
+          version() { sed -n "s/^$1=\"\(.*\)\"/\1/p" FerroUI/scripts/android/env.sh; }
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+            "ndk;$(version FERROUI_ANDROID_NDK_VERSION)" "build-tools;$(version FERROUI_ANDROID_BUILD_TOOLS_VERSION)" \
+            "platforms;$(version FERROUI_ANDROID_PLATFORM)" > /dev/null
+      - name: Package
+        working-directory: smoke/my-app
+        run: |
+          FERROUI_ANDROID_WORKSPACE="$PWD" FerroUI/scripts/android/apk.sh package --package my-app-android \
+            --label "My App" --application-id org.example.myapp | tee "$RUNNER_TEMP/apk.out"
+          apk="$(sed -n 's/^APK: //p' "$RUNNER_TEMP/apk.out" | tail -n 1)"
+          test -f "$apk"
+          ls -l "$apk"
+
+  cross-platform-ios:
+    name: cross-platform (iOS bundle)
+    needs: conventions
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          targets: aarch64-apple-ios-sim
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          key: cross-platform-ios
+          workspaces: smoke/my-app
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-on-failure: true
+      - name: Install cargo-generate
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
+            "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-aarch64-apple-darwin.tar.gz"
+          echo "$CARGO_GENERATE_SHA256_MACOS  $RUNNER_TEMP/cargo-generate.tar.gz" | shasum -a 256 -c -
+          tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
+      - name: Generate and set up the submodule
+        run: SMOKE_STEPS=" " scripts/smoke.sh cross-platform smoke/my-app --define theme=macos --define app_id=org.example.myapp
+      # As the iOS job of FerroUI's app.yml.
+      - name: Bundle
+        working-directory: smoke/my-app
+        run: |
+          app="$(FERROUI_IOS_WORKSPACE="$PWD" FerroUI/scripts/ios/bundle.sh --package my-app-ios --bin my-app-ios \
+            --name "My App" --bundle-id org.example.myapp | tail -n 1)"
+          plutil -p "$app/Info.plist"
+          codesign --verify --verbose "$app"

@@ -1,0 +1,11 @@
+<Window xmlns="https://github.com/ferroui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="{{project-name | pascal_case}}.MainWindow"
+        Title="{{project-name}}"
+        Width="480" Height="320">
+  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+    <TextBlock Text="Welcome to FerroUI!" FontSize="24" HorizontalAlignment="Center" />
+    <Button Name="GreetButton" Content="Click me" Click="OnGreetClick" HorizontalAlignment="Center" />
+    <TextBlock Name="Message" Text="Not clicked yet" HorizontalAlignment="Center" />
+  </StackPanel>
+</Window>

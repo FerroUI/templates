@@ -1,0 +1,23 @@
+[package]
+name = "{{project-name}}-ios"
+description = "The iOS host of {{project-name}}"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+# FerroUI/scripts/ios/bundle.sh with FERROUI_IOS_WORKSPACE builds the executable and puts it into an
+# application bundle (FerroUI/docs/apps.md).
+[[bin]]
+name = "{{project-name}}-ios"
+path = "main.rs"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+{{project-name}} = { path = "../{{project-name | pascal_case}}" }
+ferroui-base = { workspace = true }
+ferroui-controls = { workspace = true }
+ferroui-ios = { workspace = true }
+{%- if theme == "material" %}
+ferroui-themes-material = { workspace = true }
+{%- endif %}

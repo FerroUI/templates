@@ -1,0 +1,31 @@
+[package]
+name = "{{project-name}}"
+description = "A FerroUI control library"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+license = "MIT"
+publish = false
+build = "build.rs"
+# The build script exports the type model of the crate with its compiled documents; Cargo hands the
+# path of the file to the build scripts of the crates that depend on this one
+# (`DEP_{{crate_name | shouty_snake_case}}_XAML_XAMLMETA`), whose documents name the controls of the
+# library and include its theme.
+links = "{{crate_name}}_xaml"
+
+# Every FerroUI crate at the same exact version: the crates of a release depend on one another
+# at exactly its version.
+[dependencies]
+# The compiled markup of the crate calls the typed functions of the members it names.
+ferroui-base = { version = "=0.4.0", features = ["markup-functions"] }
+ferroui-controls = "=0.4.0"
+ferroui-markup = "=0.4.0"
+ferroui-markup-xaml = "=0.4.0"
+
+[build-dependencies]
+# The XAML compiler of the build script (build.rs).
+ferroui-build = "=0.4.0"
+
+[dev-dependencies]
+ferroui-base = { version = "=0.4.0", features = ["testing"] }
+ferroui-controls = { version = "=0.4.0", features = ["testing"] }

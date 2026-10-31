@@ -1,0 +1,6 @@
+<ResourceDictionary xmlns="https://github.com/ferroui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Resources by key, for {StaticResource} and {DynamicResource}. -->
+  <SolidColorBrush x:Key="{{project-name | pascal_case}}AccentBrush" Color="#0067C0" />
+  <x:Double x:Key="{{project-name | pascal_case}}Spacing">12</x:Double>
+</ResourceDictionary>

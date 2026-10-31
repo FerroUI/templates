@@ -1,0 +1,52 @@
+[template]
+description = "A cross-platform FerroUI application: a shared crate in XAML with the MVVM pattern, with desktop, browser, Android and iOS hosts, FerroUI as a git submodule and CI with GitHub Pages"
+# Copied as they are: the build script has no placeholders.
+exclude = ["*/build.rs"]
+ignore = ["theme.rhai", "heads.rhai"]
+
+[hooks]
+pre = ["theme.rhai", "heads.rhai"]
+
+[placeholders.theme]
+type = "string"
+prompt = "Theme (winui: WinUI 3, fluent: Fluent, simple: Simple, macos: macOS 26, material: Material 3 Expressive)"
+choices = ["winui", "fluent", "simple", "macos", "material"]
+default = "winui"
+
+[placeholders.desktop]
+type = "bool"
+prompt = "Desktop host (Windows, macOS, Linux)?"
+default = true
+
+[placeholders.browser]
+type = "bool"
+prompt = "Browser host (WebAssembly, published to GitHub Pages)?"
+default = true
+
+[placeholders.android]
+type = "bool"
+prompt = "Android host?"
+default = true
+
+[placeholders.ios]
+type = "bool"
+prompt = "iOS host?"
+default = true
+
+[placeholders.app_id]
+type = "string"
+prompt = "Application id of the Android and iOS hosts (empty: com.example.<project name>)"
+regex = "^$|^[a-zA-Z][A-Za-z0-9_]*(\\.[a-zA-Z][A-Za-z0-9_]*)+$"
+default = ""
+
+[conditional.'desktop == false']
+ignore = ["{{project-name | pascal_case}}.Desktop"]
+
+[conditional.'browser == false']
+ignore = ["{{project-name | pascal_case}}.Browser"]
+
+[conditional.'android == false']
+ignore = ["{{project-name | pascal_case}}.Android"]
+
+[conditional.'ios == false']
+ignore = ["{{project-name | pascal_case}}.iOS"]

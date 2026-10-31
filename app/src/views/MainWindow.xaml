@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/ferroui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:{{project-name | pascal_case}}.ViewModels"
+        x:Class="{{project-name | pascal_case}}.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{{project-name}}"
+        Width="480" Height="320">
+  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+    <TextBlock Text="{Binding Greeting}" FontSize="24" HorizontalAlignment="Center" />
+    <Button Name="IncrementButton" Content="Click me" Command="{Binding {% if mvvm == "reactiveui" %}IncrementCommand{% else %}Increment{% endif %}}"
+            HorizontalAlignment="Center" />
+    <TextBlock Name="CountText" Text="{Binding CountText}" HorizontalAlignment="Center" />
+  </StackPanel>
+</Window>

@@ -1,0 +1,8 @@
+[template]
+description = "Item: a window, a XAML document with the class of its code"
+
+[placeholders.namespace]
+type = "string"
+prompt = "The XAML namespace of the module the window goes into (the dotted name NAMESPACES of register_types.rs gives it, for example MyApp.Views)"
+regex = "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$"
+default = "MyApp.Views"

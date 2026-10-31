@@ -1,0 +1,14 @@
+[template]
+description = "A FerroUI desktop application in XAML with code-behind: App.xaml and MainWindow.xaml with their classes, no view models"
+# Copied as they are: the build script has no placeholders.
+exclude = ["build.rs"]
+ignore = ["theme.rhai"]
+
+[hooks]
+pre = ["theme.rhai"]
+
+[placeholders.theme]
+type = "string"
+prompt = "Theme (winui: WinUI 3, fluent: Fluent, simple: Simple, macos: macOS 26, material: Material 3 Expressive)"
+choices = ["winui", "fluent", "simple", "macos", "material"]
+default = "winui"

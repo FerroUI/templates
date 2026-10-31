@@ -1,0 +1,57 @@
+name: Setup
+description: >
+  What a job that generates and builds projects needs: the stable toolchain, the Rust build cache of
+  the shared target directory, mold, the system packages of FerroUI's desktop build and tests, the
+  pinned cargo-generate, and, when the workflow names a branch of FerroUI instead of crates.io, a
+  checkout of that branch for scripts/patch-ferroui.py.
+
+inputs:
+  cache-key:
+    description: Key of the Rust build cache.
+    required: true
+  ferroui:
+    description: >
+      "patch": the single-crate templates take FerroUI as the workflow's FERROUI says (crates.io or a
+      checkout of a branch); "submodule": the project takes FerroUI from its own submodule.
+    required: false
+    default: patch
+
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+    - name: One target directory for every generated project
+      shell: bash
+      run: echo "CARGO_TARGET_DIR=$GITHUB_WORKSPACE/target" >> "$GITHUB_ENV"
+    - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      with:
+        key: ${{ inputs.cache-key }}
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+        cache-on-failure: true
+    # mold links the test executables of a UI application several times faster than the default linker.
+    - uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038 # v1
+    # As FerroUI's app.yml: the X libraries are opened at run time; Skia links FreeType and
+    # Fontconfig and needs a font for the default family.
+    - name: System packages
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          xvfb xauth libx11-6 libxi6 libxrandr2 libxcursor1 libxfixes3 libxext6 \
+          libgl1 libegl1 libgl1-mesa-dri \
+          libfontconfig1-dev libfreetype6-dev fonts-dejavu-core pkg-config
+    - name: Install cargo-generate
+      shell: bash
+      run: |
+        curl -sSfL -o "$RUNNER_TEMP/cargo-generate.tar.gz" \
+          "https://github.com/cargo-generate/cargo-generate/releases/download/v$CARGO_GENERATE_VERSION/cargo-generate-v$CARGO_GENERATE_VERSION-x86_64-unknown-linux-gnu.tar.gz"
+        echo "$CARGO_GENERATE_SHA256  $RUNNER_TEMP/cargo-generate.tar.gz" | sha256sum -c -
+        tar -xzf "$RUNNER_TEMP/cargo-generate.tar.gz" -C "$HOME/.cargo/bin" cargo-generate
+        cargo generate --version
+    - name: FerroUI
+      if: inputs.ferroui == 'patch' && env.FERROUI != 'crates.io'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch "$FERROUI" https://github.com/wieslawsoltes/FerroUI.git "$RUNNER_TEMP/FerroUI"
+        git -C "$RUNNER_TEMP/FerroUI" log -1 --format='FerroUI %H %s'
+        echo "FERROUI_CHECKOUT=$RUNNER_TEMP/FerroUI" >> "$GITHUB_ENV"

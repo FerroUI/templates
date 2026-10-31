@@ -1,0 +1,44 @@
+name: CI
+
+# Build, tests, the browser site and its GitHub Pages deployment, and the mobile packages, with the
+# shared workflow of FerroUI (FerroUI/docs/apps.md).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ci-${{ "{{" }} github.ref {{ "}}" }}
+  cancel-in-progress: ${{ "{{" }} github.ref != 'refs/heads/main' {{ "}}" }}
+
+jobs:
+  app:
+    uses: wieslawsoltes/FerroUI/.github/workflows/app.yml@main
+    with:
+      # The view models and the views on the test platform of FerroUI.
+      test: |
+        -p {{project-name}}
+{%- if desktop %}
+      check: |
+        -p {{project-name}}-desktop
+{%- endif %}
+{%- if browser %}
+      browser-package: {{project-name}}-browser
+{%- else %}
+      pages: false
+{%- endif %}
+{%- if android %}
+      # The APK (artifact android-apk).
+      android: --package {{project-name}}-android --label "{{project-name | title_case}}" --application-id {{app_id}}
+{%- endif %}
+{%- if ios %}
+      # The application bundle for the simulator (artifact ios-app).
+      ios: --package {{project-name}}-ios --bin {{project-name}}-ios --name "{{project-name | title_case}}" --bundle-id {{app_id}}
+{%- endif %}

@@ -1,0 +1,12 @@
+[template]
+description = "A FerroUI desktop application written in Rust with the builders of ferroui-view: no XAML"
+ignore = ["theme.rhai"]
+
+[hooks]
+pre = ["theme.rhai"]
+
+[placeholders.theme]
+type = "string"
+prompt = "Theme (winui: WinUI 3, fluent: Fluent, simple: Simple, macos: macOS 26, material: Material 3 Expressive)"
+choices = ["winui", "fluent", "simple", "macos", "material"]
+default = "winui"

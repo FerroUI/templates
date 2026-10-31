@@ -1,0 +1,36 @@
+[package]
+name = "{{project-name}}"
+description = "A FerroUI application"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+license = "MIT"
+publish = false
+
+# Every FerroUI crate at the same exact version: the crates of a release depend on one another
+# at exactly its version.
+[dependencies]
+ferroui-base = "=0.4.0"
+ferroui-controls = "=0.4.0"
+# The declarative API, with `launch` and the windows of the desktop platforms.
+ferroui-view = { version = "=0.4.0", features = ["desktop"] }
+{{theme_crate}} = "=0.4.0"
+{%- if theme == "material" %}
+# The desktop platforms, for the application builder that adds the fonts of the Material theme.
+ferroui-desktop = "=0.4.0"
+{%- endif %}
+
+[dev-dependencies]
+ferroui-controls = { version = "=0.4.0", features = ["testing"] }
+
+# Optimised code for running the application locally: `cargo run --profile fast-release`.
+[profile.fast-release]
+inherits = "release"
+lto = false
+
+# The build to ship: `cargo build --profile dist`.
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+strip = "symbols"

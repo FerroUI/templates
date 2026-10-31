@@ -1,0 +1,25 @@
+[package]
+name = "{{project-name}}-android"
+description = "The Android host of {{project-name}}"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+# A shared library: the application class of the Java layer of FerroUI's Android backend loads it.
+# FerroUI/scripts/android/apk.sh with FERROUI_ANDROID_WORKSPACE builds it and packages the APK
+# (FerroUI/docs/apps.md); on another system the library is empty.
+[lib]
+name = "{{crate_name}}_android"
+path = "application.rs"
+crate-type = ["cdylib"]
+
+[target.'cfg(target_os = "android")'.dependencies]
+{{project-name}} = { path = "../{{project-name | pascal_case}}" }
+ferroui-base = { workspace = true }
+ferroui-controls = { workspace = true }
+ferroui-android = { workspace = true }
+{%- if theme == "material" %}
+ferroui-themes-material = { workspace = true }
+{%- endif %}

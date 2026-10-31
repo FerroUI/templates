@@ -1,0 +1,40 @@
+[package]
+name = "{{project-name}}"
+description = "A FerroUI application"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+license = "MIT"
+publish = false
+build = "build.rs"
+
+# Every FerroUI crate at the same exact version: the crates of a release depend on one another
+# at exactly its version.
+[dependencies]
+# The compiled markup of the crate calls the typed functions of the members it names.
+ferroui-base = { version = "=0.4.0", features = ["markup-functions"] }
+ferroui-controls = "=0.4.0"
+ferroui-markup = "=0.4.0"
+ferroui-markup-xaml = "=0.4.0"
+ferroui-desktop = "=0.4.0"
+{{theme_crate}} = "=0.4.0"
+
+[build-dependencies]
+# The XAML compiler of the build script (build.rs).
+ferroui-build = "=0.4.0"
+
+[dev-dependencies]
+ferroui-base = { version = "=0.4.0", features = ["testing"] }
+ferroui-controls = { version = "=0.4.0", features = ["testing"] }
+
+# Optimised code for running the application locally: `cargo run --profile fast-release`.
+[profile.fast-release]
+inherits = "release"
+lto = false
+
+# The build to ship: `cargo build --profile dist`.
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+strip = "symbols"

@@ -1,0 +1,33 @@
+[workspace]
+resolver = "2"
+members = [
+    "{{project-name | pascal_case}}",
+{%- if desktop %}
+    "{{project-name | pascal_case}}.Desktop",
+{%- endif %}
+{%- if browser %}
+    "{{project-name | pascal_case}}.Browser",
+{%- endif %}
+{%- if android %}
+    "{{project-name | pascal_case}}.Android",
+{%- endif %}
+{%- if ios %}
+    "{{project-name | pascal_case}}.iOS",
+{%- endif %}
+]
+# The FerroUI crates belong to the workspace of the submodule (FerroUI/docs/apps.md).
+exclude = ["FerroUI"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+license = "MIT"
+
+[workspace.dependencies]
+# >>> FerroUI workspace dependencies (written by FerroUI/scripts/apps/sync-workspace.py from FerroUI/Cargo.toml; do not edit)
+# <<< FerroUI workspace dependencies
+# The dependencies of the application itself follow the block.
+
+# >>> FerroUI profiles (written by FerroUI/scripts/apps/sync-workspace.py from FerroUI/Cargo.toml; do not edit)
+# <<< FerroUI profiles
