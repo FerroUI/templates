@@ -38,9 +38,17 @@ ferroui-controls = { version = "=0.4.0", features = ["testing"] }
 inherits = "release"
 lto = false
 
-# The build to ship: `cargo build --profile dist`.
+# The build to ship: `cargo build --profile dist`. Without unwinding: a panic ends the process
+# after the panic hook has run, and the executable is about a fifth smaller.
 [profile.dist]
 inherits = "release"
 lto = "fat"
 codegen-units = 1
 strip = "symbols"
+panic = "abort"
+
+# The build to ship with unwinding, for an application that catches panics to carry on:
+# `cargo build --profile dist-unwind`.
+[profile.dist-unwind]
+inherits = "dist"
+panic = "unwind"
