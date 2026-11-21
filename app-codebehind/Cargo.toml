@@ -12,28 +12,40 @@ build = "build.rs"
 # at exactly its version.
 [dependencies]
 # The compiled markup of the crate calls the typed functions of the members it names.
-ferroui-base = { version = "=0.4.0", features = ["markup-functions"] }
-ferroui-controls = "=0.4.0"
-ferroui-markup = "=0.4.0"
-ferroui-markup-xaml = "=0.4.0"
-ferroui-desktop = "=0.4.0"
-{{theme_crate}} = "=0.4.0"
+ferroui-base = { version = "=0.5.0", features = ["markup-functions"] }
+ferroui-controls = "=0.5.0"
+ferroui-markup = "=0.5.0"
+ferroui-markup-xaml = "=0.5.0"
+ferroui-desktop = "=0.5.0"
+{{theme_crate}} = "=0.5.0"
 
 [build-dependencies]
 # The XAML compiler of the build script (build.rs).
-ferroui-build = "=0.4.0"
+ferroui-build = "=0.5.0"
 
 [dev-dependencies]
-ferroui-base = { version = "=0.4.0", features = ["testing"] }
-ferroui-controls = { version = "=0.4.0", features = ["testing"] }
+ferroui-base = { version = "=0.5.0", features = ["testing"] }
+ferroui-controls = { version = "=0.5.0", features = ["testing"] }
+
+# The everyday optimised build: `cargo build --release`. Without unwinding: a panic ends the
+# process after the panic hook has run, and the executable is about a fifth smaller.
+[profile.release]
+lto = "thin"
+panic = "abort"
+
+# `release` with unwinding, for an application that catches panics to carry on.
+[profile.release-unwind]
+inherits = "release"
+panic = "unwind"
 
 # Optimised code for running the application locally: `cargo run --profile fast-release`.
 [profile.fast-release]
 inherits = "release"
 lto = false
+panic = "unwind"
 
-# The build to ship: `cargo build --profile dist`. Without unwinding: a panic ends the process
-# after the panic hook has run, and the executable is about a fifth smaller.
+# The build to ship: `cargo build --profile dist`. The smallest executable, for about twice the
+# build time of `release`.
 [profile.dist]
 inherits = "release"
 lto = "fat"
@@ -46,3 +58,7 @@ panic = "abort"
 [profile.dist-unwind]
 inherits = "dist"
 panic = "unwind"
+
+# Compiled theme markup runs once, when the theme is constructed: optimised for size when shipping.
+[profile.dist.package.{{theme_crate}}]
+opt-level = "z"
