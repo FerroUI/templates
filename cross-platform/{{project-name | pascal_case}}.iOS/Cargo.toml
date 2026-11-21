@@ -17,7 +17,7 @@ path = "main.rs"
 {{project-name}} = { path = "../{{project-name | pascal_case}}" }
 ferroui-base = { workspace = true }
 ferroui-controls = { workspace = true }
-ferroui-ios = { workspace = true }
+ferroui-ios = { workspace = true, features = ["skia"] }
 {%- if theme == "material" %}
 ferroui-themes-material = { workspace = true }
 {%- endif %}

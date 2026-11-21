@@ -10,27 +10,51 @@ publish = false
 # Every FerroUI crate at the same exact version: the crates of a release depend on one another
 # at exactly its version.
 [dependencies]
-ferroui-base = "=0.4.0"
-ferroui-controls = "=0.4.0"
+ferroui-base = "=0.5.0"
+ferroui-controls = "=0.5.0"
 # The declarative API, with `launch` and the windows of the desktop platforms.
-ferroui-view = { version = "=0.4.0", features = ["desktop"] }
-{{theme_crate}} = "=0.4.0"
+ferroui-view = { version = "=0.5.0", features = ["desktop"] }
+{{theme_crate}} = "=0.5.0"
 {%- if theme == "material" %}
 # The desktop platforms, for the application builder that adds the fonts of the Material theme.
-ferroui-desktop = "=0.4.0"
+ferroui-desktop = "=0.5.0"
 {%- endif %}
 
 [dev-dependencies]
-ferroui-controls = { version = "=0.4.0", features = ["testing"] }
+ferroui-controls = { version = "=0.5.0", features = ["testing"] }
+
+# The everyday optimised build: `cargo build --release`. Without unwinding: a panic ends the
+# process after the panic hook has run, and the executable is about a fifth smaller.
+[profile.release]
+lto = "thin"
+panic = "abort"
+
+# `release` with unwinding, for an application that catches panics to carry on.
+[profile.release-unwind]
+inherits = "release"
+panic = "unwind"
 
 # Optimised code for running the application locally: `cargo run --profile fast-release`.
 [profile.fast-release]
 inherits = "release"
 lto = false
+panic = "unwind"
 
-# The build to ship: `cargo build --profile dist`.
+# The build to ship: `cargo build --profile dist`. The smallest executable, for about twice the
+# build time of `release`.
 [profile.dist]
 inherits = "release"
 lto = "fat"
 codegen-units = 1
 strip = "symbols"
+panic = "abort"
+
+# The build to ship with unwinding, for an application that catches panics to carry on:
+# `cargo build --profile dist-unwind`.
+[profile.dist-unwind]
+inherits = "dist"
+panic = "unwind"
+
+# Compiled theme markup runs once, when the theme is constructed: optimised for size when shipping.
+[profile.dist.package.{{theme_crate}}]
+opt-level = "z"

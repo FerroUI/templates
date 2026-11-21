@@ -78,7 +78,7 @@ cargo generate --git https://github.com/FerroUI/templates window --name Settings
 ## Dependencies
 
 The single-crate templates (`app`, `app-codebehind`, `declarative`, `rsx`, `control-library`)
-depend on the FerroUI crates on crates.io, every one at the same exact version (`=0.4.0`): the
+depend on the FerroUI crates on crates.io, every one at the same exact version (`=0.5.0`): the
 crates of a release depend on one another at exactly its version. To move a generated project to a
 later release, change the version of every FerroUI crate at once.
 

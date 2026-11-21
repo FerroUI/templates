@@ -3,7 +3,7 @@
 use crate::{{control}};
 use ferroui_base::controls::ResourceDictionary;
 use ferroui_base::metadata::from_markup_value;
-use ferroui_base::utilities::Uri;
+use ferroui_base::utilities::UriRef;
 use ferroui_base::Ref;
 use ferroui_controls::testing::{TestServices, UnitTestApplication};
 use ferroui_controls::{Control, TextBlock, Window};
@@ -23,7 +23,7 @@ fn the_properties_keep_their_values() {
 fn the_control_theme_draws_the_header() {
     let _app = UnitTestApplication::start(TestServices::styled_window());
     crate::register_types();
-    let uri = Uri::absolute("ferres://{{project-name | pascal_case}}/themes/Generic.xaml").expect("the URI of the theme");
+    let uri = UriRef::parse("ferres://{{project-name | pascal_case}}/themes/Generic.xaml").expect("the URI of the theme");
     let theme = FerroXamlLoader::load(&uri, None).expect("the theme loads");
     let theme = from_markup_value::<Ref<ResourceDictionary>>(&Some(theme)).expect("the theme is a resource dictionary");
 

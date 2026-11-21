@@ -17,15 +17,15 @@ links = "{{crate_name}}_xaml"
 # at exactly its version.
 [dependencies]
 # The compiled markup of the crate calls the typed functions of the members it names.
-ferroui-base = { version = "=0.4.0", features = ["markup-functions"] }
-ferroui-controls = "=0.4.0"
-ferroui-markup = "=0.4.0"
-ferroui-markup-xaml = "=0.4.0"
+ferroui-base = { version = "=0.5.0", features = ["markup-functions"] }
+ferroui-controls = "=0.5.0"
+ferroui-markup = "=0.5.0"
+ferroui-markup-xaml = "=0.5.0"
 
 [build-dependencies]
 # The XAML compiler of the build script (build.rs).
-ferroui-build = "=0.4.0"
+ferroui-build = "=0.5.0"
 
 [dev-dependencies]
-ferroui-base = { version = "=0.4.0", features = ["testing"] }
-ferroui-controls = { version = "=0.4.0", features = ["testing"] }
+ferroui-base = { version = "=0.5.0", features = ["testing"] }
+ferroui-controls = { version = "=0.5.0", features = ["testing"] }
